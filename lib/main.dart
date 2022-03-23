@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_verification_box/verification_box.dart';
@@ -138,21 +140,45 @@ class JoinPage extends StatefulWidget {
 }
 
 class _JoinPageState extends State<JoinPage> {
+  Timer? timer;
   var _onPressed;
-  late List<String> _players;
+  List<String> _players = [];
+  List<String> _readyPlayers = [];
 
-  void _readyForGame() {
-    // send request to ready for game
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _readyForGame() async {
+    var prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('name');
+    final room = prefs.getString('game');
+    var dio = Dio();
+    try {
+      var response = await dio.post(baseURL + '/readyGame',
+          queryParameters: {'game': room, 'name': name});
+      _players = response.data['players'].cast<String>();
+      _readyPlayers = response.data['readyPlayers'].cast<String>();
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   Future<void> _joinGame(room) async {
     var prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('name');
+    prefs.setString('game', room);
     var dio = Dio();
     try {
       var response = await dio.post(baseURL + '/join',
           queryParameters: {'game': room, 'name': name});
       _players = response.data['players'].cast<String>();
+      _readyPlayers = response.data['readyPlayers'].cast<String>();
+      timer = timer ??
+          Timer.periodic(
+              const Duration(seconds: 1), (Timer t) => _joinGame(room));
       if (_players.isNotEmpty) {
         setState(() {
           _onPressed = () => _readyForGame();
@@ -168,6 +194,7 @@ class _JoinPageState extends State<JoinPage> {
     return Scaffold(
         appBar: AppBar(title: const Text('集结伙伴')),
         body: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             const Padding(
               padding: EdgeInsets.all(8),
@@ -183,7 +210,21 @@ class _JoinPageState extends State<JoinPage> {
                 focusBorderColor: Colors.lightBlue,
                 onSubmitted: (value) => _joinGame(value),
               ),
-            )
+            ),
+            Expanded(
+                child: ListView.builder(
+                    itemCount: _players.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        leading: _readyPlayers.contains(_players[index])
+                            ? const Icon(Icons.verified)
+                            : const Icon(Icons.pending),
+                        title: Text(
+                          _players[index],
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      );
+                    }))
           ],
         ),
         floatingActionButton: FloatingActionButton(
