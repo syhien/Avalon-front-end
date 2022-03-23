@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_verification_box/verification_box.dart';
+import 'package:dio/dio.dart';
+
+const String baseURL = "http://81.69.23.94:5001";
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +20,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.pink,
       ),
-      home: WelcomePage(),
+      home: const WelcomePage(),
     );
   }
 }
@@ -116,6 +120,76 @@ class _WelcomePageState extends State<WelcomePage> {
         title: Text(barTitle),
       ),
       body: Image.asset('images/The_Death_of_King_Arthur.jpg'),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '下一步',
+        onPressed: () => Navigator.push(
+            context, MaterialPageRoute(builder: (context) => const JoinPage())),
+        child: const Icon(Icons.arrow_right_alt),
+      ),
     );
+  }
+}
+
+class JoinPage extends StatefulWidget {
+  const JoinPage({Key? key}) : super(key: key);
+
+  @override
+  State<JoinPage> createState() => _JoinPageState();
+}
+
+class _JoinPageState extends State<JoinPage> {
+  var _onPressed;
+  late List<String> _players;
+
+  void _readyForGame() {
+    // send request to ready for game
+  }
+
+  Future<void> _joinGame(room) async {
+    var prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('name');
+    var dio = Dio();
+    try {
+      var response = await dio.post(baseURL + '/join',
+          queryParameters: {'game': room, 'name': name});
+      _players = response.data['players'].cast<String>();
+      if (_players.isNotEmpty) {
+        setState(() {
+          _onPressed = () => _readyForGame();
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: const Text('集结伙伴')),
+        body: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text(
+                '与玩伴输入同样的4位数字',
+                style: TextStyle(fontSize: 26),
+              ),
+            ),
+            SizedBox(
+              height: 45,
+              child: VerificationBox(
+                count: 4,
+                focusBorderColor: Colors.lightBlue,
+                onSubmitted: (value) => _joinGame(value),
+              ),
+            )
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          tooltip: '我已就绪',
+          onPressed: _onPressed,
+          child: const Icon(Icons.check_circle),
+        ));
   }
 }

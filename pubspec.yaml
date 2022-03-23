@@ -36,6 +36,11 @@ dependencies:
   cupertino_icons: ^1.0.2
   shared_preferences: ^2.0.13
 
+  flutter_verification_box:
+    git:
+      url: https://github.com/afpro/flutter_verification_box.git
+  dio: ^4.0.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
