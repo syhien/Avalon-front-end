@@ -142,6 +142,7 @@ class JoinPage extends StatefulWidget {
 class _JoinPageState extends State<JoinPage> {
   Timer? timer;
   var _onPressed;
+  var _buttonIcon = const Icon(Icons.check_circle);
   List<String> _players = [];
   List<String> _readyPlayers = [];
 
@@ -154,11 +155,11 @@ class _JoinPageState extends State<JoinPage> {
   Future<void> _readyForGame() async {
     var prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('name');
-    final room = prefs.getString('game');
+    final game = prefs.getString('game');
     var dio = Dio();
     try {
       var response = await dio.post(baseURL + '/readyGame',
-          queryParameters: {'game': room, 'name': name});
+          queryParameters: {'game': game, 'name': name});
       _players = response.data['players'].cast<String>();
       _readyPlayers = response.data['readyPlayers'].cast<String>();
     } catch (e) {
@@ -166,24 +167,51 @@ class _JoinPageState extends State<JoinPage> {
     }
   }
 
-  Future<void> _joinGame(room) async {
+  Future<void> _refresh() async {
     var prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('name');
-    prefs.setString('game', room);
+    final game = prefs.getString('game');
+    try {
+      var response = await Dio().get(baseURL + '/players',
+          queryParameters: {'game': game, 'name': name});
+      setState(() {
+        _players = response.data['players'].cast<String>();
+        _readyPlayers = response.data['readyPlayers'].cast<String>();
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+    if (!_readyPlayers.contains(name)) {
+      setState(() {
+        _onPressed = () => _readyForGame();
+      });
+    }
+    if (_players.length == _readyPlayers.length &&
+        _players.length >= 5 &&
+        _players.length <= 10) {
+      setState(() {
+        _buttonIcon = const Icon(Icons.arrow_right_alt);
+        // _onPressed =
+      });
+    }
+  }
+
+  Future<void> _joinGame(game) async {
+    _players = [];
+    _readyPlayers = [];
+    var prefs = await SharedPreferences.getInstance();
+    final name = prefs.getString('name');
+    prefs.setString('game', game);
     var dio = Dio();
     try {
       var response = await dio.post(baseURL + '/join',
-          queryParameters: {'game': room, 'name': name});
-      _players = response.data['players'].cast<String>();
-      _readyPlayers = response.data['readyPlayers'].cast<String>();
-      timer = timer ??
-          Timer.periodic(
-              const Duration(seconds: 1), (Timer t) => _joinGame(room));
-      if (_players.isNotEmpty) {
-        setState(() {
-          _onPressed = () => _readyForGame();
-        });
-      }
+          queryParameters: {'game': game, 'name': name});
+      setState(() {
+        _players = response.data['players'].cast<String>();
+        _readyPlayers = response.data['readyPlayers'].cast<String>();
+      });
+      timer =
+          Timer.periodic(const Duration(seconds: 1), (Timer t) => _refresh());
     } catch (e) {
       print(e.toString());
     }
@@ -217,7 +245,10 @@ class _JoinPageState extends State<JoinPage> {
                     itemBuilder: (context, index) {
                       return ListTile(
                         leading: _readyPlayers.contains(_players[index])
-                            ? const Icon(Icons.verified)
+                            ? const Icon(
+                                Icons.verified,
+                                color: Colors.green,
+                              )
                             : const Icon(Icons.pending),
                         title: Text(
                           _players[index],
@@ -230,7 +261,7 @@ class _JoinPageState extends State<JoinPage> {
         floatingActionButton: FloatingActionButton(
           tooltip: '我已就绪',
           onPressed: _onPressed,
-          child: const Icon(Icons.check_circle),
+          child: _buttonIcon,
         ));
   }
 }
