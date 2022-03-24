@@ -158,10 +158,15 @@ class _JoinPageState extends State<JoinPage> {
     final game = prefs.getString('game');
     var dio = Dio();
     try {
-      var response = await dio.post(baseURL + '/readyGame',
+      final response = await dio.post(baseURL + '/readyGame',
           queryParameters: {'game': game, 'name': name});
       _players = response.data['players'].cast<String>();
       _readyPlayers = response.data['readyPlayers'].cast<String>();
+      if (_readyPlayers.contains(name)) {
+        setState(() {
+          _onPressed = null;
+        });
+      }
     } catch (e) {
       print(e.toString());
     }
@@ -191,7 +196,8 @@ class _JoinPageState extends State<JoinPage> {
         _players.length <= 10) {
       setState(() {
         _buttonIcon = const Icon(Icons.arrow_right_alt);
-        // _onPressed =
+        _onPressed = () => Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const IdentityPage()));
       });
     }
   }
@@ -239,6 +245,13 @@ class _JoinPageState extends State<JoinPage> {
                 onSubmitted: (value) => _joinGame(value),
               ),
             ),
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Text(
+                '所有玩伴集结并就绪后，即可出发进行任务',
+                style: TextStyle(fontSize: 24),
+              ),
+            ),
             Expanded(
                 child: ListView.builder(
                     itemCount: _players.length,
@@ -255,7 +268,7 @@ class _JoinPageState extends State<JoinPage> {
                           style: const TextStyle(fontSize: 20),
                         ),
                       );
-                    }))
+                    })),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -263,5 +276,55 @@ class _JoinPageState extends State<JoinPage> {
           onPressed: _onPressed,
           child: _buttonIcon,
         ));
+  }
+}
+
+class IdentityPage extends StatefulWidget {
+  const IdentityPage({Key? key}) : super(key: key);
+
+  @override
+  State<IdentityPage> createState() => _IdentityPageState();
+}
+
+class _IdentityPageState extends State<IdentityPage> {
+  String _identity = "";
+  List<String> _seenPlayers = [];
+
+  Future<void> _getIdentity() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final response = await Dio().get(baseURL + '/identity',
+          queryParameters: {'game': game, 'name': name});
+      _identity = response.data['identity'];
+      _seenPlayers = response.data['seenPlayers'].cast<String>();
+      prefs.setString('identity', _identity);
+      prefs.setStringList('seenPlayers', _seenPlayers);
+      setState(() {});
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _getIdentity();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('确认身份及情报'),
+      ),
+      body: Text('你是 $_identity，你看到 $_seenPlayers'),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '我已就绪',
+        onPressed: () => {},
+        child: const Icon(Icons.arrow_right_alt),
+      ),
+    );
   }
 }
