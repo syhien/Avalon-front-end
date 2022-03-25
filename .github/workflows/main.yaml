@@ -1,6 +1,8 @@
 name: Build Pages
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -14,4 +16,10 @@ jobs:
     - run: flutter --version
     - run: flutter pub global activate peanut
     - run: flutter pub get
+    - run: |
+        git config --global user.name syhien
+        git config --global user.email syhien@outlook.at
     - run: flutter pub global run peanut -b production
+    - run: |
+        git checkout production
+        git push
