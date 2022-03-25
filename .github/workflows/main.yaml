@@ -21,5 +21,5 @@ jobs:
         git config --global user.email syhien@outlook.at
     - run: flutter pub global run peanut -b production
     - run: |
-        git checkout production
+        git checkout -f production
         git push
