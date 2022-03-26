@@ -256,7 +256,8 @@ class _JoinPageState extends State<JoinPage> {
                 child: ListView.builder(
                     itemCount: _players.length,
                     itemBuilder: (context, index) {
-                      return ListTile(
+                      return Card(
+                          child: ListTile(
                         leading: _readyPlayers.contains(_players[index])
                             ? const Icon(
                                 Icons.verified,
@@ -267,7 +268,7 @@ class _JoinPageState extends State<JoinPage> {
                           _players[index],
                           style: const TextStyle(fontSize: 20),
                         ),
-                      );
+                      ));
                     })),
           ],
         ),
