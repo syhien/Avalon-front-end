@@ -270,7 +270,11 @@ class _JoinPageState extends State<JoinPage> {
                                 Icons.verified,
                                 color: Colors.green,
                               )
-                            : const Icon(Icons.pending),
+                            : const CircularProgressIndicator(
+                                backgroundColor: Colors.white,
+                                valueColor:
+                                    AlwaysStoppedAnimation(Colors.green),
+                              ),
                         title: Text(
                           _players[index],
                           style: const TextStyle(fontSize: 20),
