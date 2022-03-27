@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -121,7 +122,13 @@ class _WelcomePageState extends State<WelcomePage> {
       appBar: AppBar(
         title: Text(barTitle),
       ),
-      body: Image.asset('images/The_Death_of_King_Arthur.jpg'),
+      body: Container(
+        alignment: Alignment.center,
+        child: Image.asset(
+          'images/The_Death_of_King_Arthur.jpg',
+          width: window.physicalSize.width * 0.6,
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: '下一步',
         onPressed: () => Navigator.push(
@@ -314,13 +321,85 @@ class _IdentityPageState extends State<IdentityPage> {
     _getIdentity();
   }
 
+  static const Map<String, String> identitiesChineseMap = {
+    'Merlin': '🧙梅林🧙',
+    'Percival': '🔍派西维尔🔍',
+    'Loyal Servant of Arthur': '⛨亚瑟的忠臣⛨',
+    'Morgana': '🎭莫甘娜🎭',
+    'Assassin': '🔪刺客🔪',
+    'Oberon': '🤪奥伯伦🤪',
+    'Minion of Mordred': '👿莫德雷德的爪牙👿',
+    'Mordred': '😈莫德雷德😈'
+  };
+
+  static const Map<String, Icon> identitiesSeenIconMap = {
+    'Merlin': Icon(
+      Icons.gpp_bad,
+      color: Colors.redAccent,
+    ),
+    'Percival': Icon(
+      Icons.contact_support,
+      color: Colors.grey,
+    ),
+    'Morgana': Icon(
+      Icons.gpp_bad,
+      color: Colors.black,
+    ),
+    'Assassin': Icon(
+      Icons.gpp_bad,
+      color: Colors.black,
+    ),
+    'Minion of Mordred': Icon(
+      Icons.gpp_bad,
+      color: Colors.black,
+    ),
+    'Mordred': Icon(
+      Icons.gpp_bad,
+      color: Colors.black,
+    )
+  };
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('确认身份及情报'),
       ),
-      body: Text('你是 $_identity，你看到 $_seenPlayers'),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: Text('你的身份是: ' + identitiesChineseMap[_identity]!,
+                    style: const TextStyle(fontSize: 24)),
+              )),
+          Container(
+              alignment: Alignment.topCenter,
+              child: Image.asset('images/$_identity.jpg',
+                  width: window.physicalSize.width * 0.4)),
+          Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: const Text('朦胧之中你看到了: ', style: TextStyle(fontSize: 22)),
+              )),
+          Expanded(
+              child: ListView.builder(
+                  itemCount: _seenPlayers.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                        child: ListTile(
+                      leading: identitiesSeenIconMap[_identity]!,
+                      title: Text(
+                        _seenPlayers[index],
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ));
+                  })),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         tooltip: '我已就绪',
         onPressed: () => {},
