@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_verification_box/verification_box.dart';
 import 'package:dio/dio.dart';
 
-const String baseURL = "//81.69.23.94:5001";
+const String baseURL = "http://81.69.23.94:5001";
 
 void main() {
   runApp(const MyApp());
@@ -291,6 +291,22 @@ class _JoinPageState extends State<JoinPage> {
   }
 }
 
+Future<bool> isLeader() async {
+  var prefs = await SharedPreferences.getInstance();
+  final name = prefs.getString('name');
+  final game = prefs.getString('game');
+  final response = await Dio().get(baseURL + '/formTeam',
+      queryParameters: {'game': game, 'name': name});
+  final leader = response.data['leader'];
+  final players = response.data['players'].cast<String>();
+  if (players[leader] == name) {
+    print("I am leader");
+  } else {
+    print("I am not leader");
+  }
+  return players[leader] == name;
+}
+
 class IdentityPage extends StatefulWidget {
   const IdentityPage({Key? key}) : super(key: key);
 
@@ -299,6 +315,7 @@ class IdentityPage extends StatefulWidget {
 }
 
 class _IdentityPageState extends State<IdentityPage> {
+  bool amLeader = false;
   String _identity = "";
   List<String> _seenPlayers = [];
 
@@ -313,6 +330,7 @@ class _IdentityPageState extends State<IdentityPage> {
       _seenPlayers = response.data['seenPlayers'].cast<String>();
       prefs.setString('identity', _identity);
       prefs.setStringList('seenPlayers', _seenPlayers);
+      amLeader = await isLeader();
       setState(() {});
     } catch (e) {
       print(e.toString());
@@ -376,13 +394,19 @@ class _IdentityPageState extends State<IdentityPage> {
               padding: const EdgeInsets.all(16),
               child: Container(
                 alignment: Alignment.topLeft,
-                child: Text('你的身份是: ' + identitiesChineseMap[_identity]!,
+                child: Text(
+                    '你的身份是: ' +
+                        (_identity.isNotEmpty
+                            ? identitiesChineseMap[_identity]!
+                            : ''),
                     style: const TextStyle(fontSize: 24)),
               )),
           Container(
               alignment: Alignment.topCenter,
-              child: Image.asset('images/$_identity.jpg',
-                  width: window.physicalSize.width * 0.4)),
+              child: _identity.isNotEmpty
+                  ? Image.asset('images/$_identity.jpg',
+                      width: window.physicalSize.width * 0.4)
+                  : null),
           Padding(
               padding: const EdgeInsets.all(16),
               child: Container(
@@ -406,8 +430,48 @@ class _IdentityPageState extends State<IdentityPage> {
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: '我已就绪',
-        onPressed: () => {},
+        onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    amLeader ? const ChooseTeamPage() : const VoteTeamPage())),
         child: const Icon(Icons.arrow_right_alt),
+      ),
+    );
+  }
+}
+
+class ChooseTeamPage extends StatefulWidget {
+  const ChooseTeamPage({Key? key}) : super(key: key);
+
+  @override
+  State<ChooseTeamPage> createState() => _ChooseTeamPageState();
+}
+
+class _ChooseTeamPageState extends State<ChooseTeamPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('选择任务成员'),
+      ),
+    );
+  }
+}
+
+class VoteTeamPage extends StatefulWidget {
+  const VoteTeamPage({Key? key}) : super(key: key);
+
+  @override
+  State<VoteTeamPage> createState() => _VoteTeamPageState();
+}
+
+class _VoteTeamPageState extends State<VoteTeamPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('任务成员投票'),
       ),
     );
   }
