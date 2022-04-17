@@ -441,6 +441,15 @@ class _IdentityPageState extends State<IdentityPage> {
   }
 }
 
+Map teamNumbersDict = <int, List<int>>{
+  5: [0, 2, 3, 2, 3, 3],
+  6: [0, 2, 3, 4, 3, 4],
+  7: [0, 2, 3, 4, 4, 4],
+  8: [0, 3, 4, 4, 5, 5],
+  9: [0, 3, 4, 4, 5, 5],
+  10: [0, 3, 4, 4, 5, 5]
+};
+
 class ChooseTeamPage extends StatefulWidget {
   const ChooseTeamPage({Key? key}) : super(key: key);
 
@@ -449,11 +458,87 @@ class ChooseTeamPage extends StatefulWidget {
 }
 
 class _ChooseTeamPageState extends State<ChooseTeamPage> {
+  int job = 0;
+  int leaderCount = 0;
+  List<String> _players = [];
+  List<String> _pickedPlayers = [];
+  var _onPressed;
+  void getJob() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final response = await Dio().get(baseURL + '/status',
+          queryParameters: {'game': game, 'name': name});
+      job = response.data['job'];
+      leaderCount = response.data['leaderCount'];
+      _players = response.data['players'].cast<String>();
+      setState(() {});
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getJob();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('选择任务成员'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: Text(
+                    '任务' +
+                        job.toString() +
+                        '第' +
+                        leaderCount.toString() +
+                        '次选拔',
+                    style: const TextStyle(fontSize: 24)),
+              )),
+          Expanded(
+              child: ListView.builder(
+                  itemCount: _players.length,
+                  itemBuilder: (context, index) {
+                    return CheckboxListTile(
+                        title: Text(_players[index]),
+                        value: _pickedPlayers.contains(_players[index]),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              _pickedPlayers.add(_players[index]);
+                            } else {
+                              _pickedPlayers.remove(_players[index]);
+                            }
+                            if (_pickedPlayers.length ==
+                                teamNumbersDict[_players.length][job]) {
+                              _onPressed = () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const VoteTeamPage()));
+                            } else {
+                              _onPressed = null;
+                            }
+                          });
+                        });
+                  }))
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '确认选择',
+        onPressed: _onPressed,
+        child: const Icon(Icons.arrow_right_alt),
       ),
     );
   }
