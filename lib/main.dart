@@ -479,6 +479,26 @@ class _ChooseTeamPageState extends State<ChooseTeamPage> {
     }
   }
 
+  Future<void> formTeam() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final response = await Dio().post(baseURL + '/formTeam',
+          queryParameters: {
+            'game': game,
+            'name': name,
+            'team': _pickedPlayers
+          });
+      if (response.statusCode == 200) {
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const VoteTeamPage()));
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -522,11 +542,7 @@ class _ChooseTeamPageState extends State<ChooseTeamPage> {
                             }
                             if (_pickedPlayers.length ==
                                 teamNumbersDict[_players.length][job]) {
-                              _onPressed = () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const VoteTeamPage()));
+                              _onPressed = formTeam();
                             } else {
                               _onPressed = null;
                             }
