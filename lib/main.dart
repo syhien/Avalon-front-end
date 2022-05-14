@@ -568,11 +568,81 @@ class VoteTeamPage extends StatefulWidget {
 }
 
 class _VoteTeamPageState extends State<VoteTeamPage> {
+  int job = 0;
+  int leaderCount = 0;
+  List<String> _players = [];
+  List<String> _team = [];
+  int leader = 0;
+
+  void getJob() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final response = await Dio().get(baseURL + '/voteTeam',
+          queryParameters: {'game': game, 'name': name});
+      setState(() {
+        job = response.data['job'];
+        leaderCount = response.data['leaderCount'];
+        leader = response.data['leader'];
+        _players = response.data['players'].cast<String>();
+        _team = response.data['team'].cast<String>();
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getJob();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('任务成员投票'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                alignment: Alignment.topLeft,
+                child: Text(
+                    '任务' +
+                        job.toString() +
+                        '第' +
+                        leaderCount.toString() +
+                        '次选拔',
+                    style: const TextStyle(fontSize: 24)),
+              )),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              alignment: Alignment.topLeft,
+              child: Text('本次选拔的队长为' + _players[leader],
+                  style: const TextStyle(fontSize: 22)),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+                itemCount: _players.length,
+                itemBuilder: (context, index) {
+                  return Card(
+                      child: ListTile(
+                    leading: _team.contains(_players[index])
+                        ? const Icon(Icons.check)
+                        : const Icon(Icons.check_box_outline_blank),
+                    title: Text(_players[index],
+                        style: const TextStyle(fontSize: 20)),
+                  ));
+                }),
+          ),
+        ],
       ),
     );
   }
