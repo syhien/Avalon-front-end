@@ -542,7 +542,7 @@ class _ChooseTeamPageState extends State<ChooseTeamPage> {
                             }
                             if (_pickedPlayers.length ==
                                 teamNumbersDict[_players.length][job]) {
-                              _onPressed = formTeam();
+                              _onPressed = () => formTeam();
                             } else {
                               _onPressed = null;
                             }
