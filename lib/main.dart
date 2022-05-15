@@ -599,6 +599,10 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
     getJob();
   }
 
+  void postVoteTeam(bool agree) {
+    // TODO: implement postVoteTeam
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -642,6 +646,26 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
                   ));
                 }),
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  child: const Text('赞成'),
+                  onPressed: () => postVoteTeam(true),
+                  autofocus: true,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  child: const Text('反对'),
+                  onPressed: () => postVoteTeam(false),
+                ),
+              )
+            ],
+          )
         ],
       ),
     );
