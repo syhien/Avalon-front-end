@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_verification_box/verification_box.dart';
 import 'package:dio/dio.dart';
 
-const String baseURL = "https://avalon.syh1en.asia";
+const String baseURL = "http://81.69.23.94:5001";
 
 void main() {
   runApp(const MyApp());
