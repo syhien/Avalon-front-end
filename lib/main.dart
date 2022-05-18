@@ -568,11 +568,13 @@ class VoteTeamPage extends StatefulWidget {
 }
 
 class _VoteTeamPageState extends State<VoteTeamPage> {
+  Timer? timer;
   int job = 0;
   int leaderCount = 0;
   List<String> _players = [];
   List<String> _team = [];
   int leader = 0;
+  var _onPressed;
 
   void getJob() async {
     try {
@@ -599,8 +601,56 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
     getJob();
   }
 
-  void postVoteTeam(bool agree) {
-    // TODO: implement postVoteTeam
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> postVoteTeam(bool agree) async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      Dio().post(baseURL + '/voteTeam', queryParameters: {
+        'game': game,
+        'name': name,
+        'vote': agree ? 'agree' : 'disagree'
+      });
+      timer = Timer.periodic(
+          const Duration(seconds: 1), (Timer t) => checkVoteTeam());
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> checkVoteTeam() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final gameStatus = await Dio().get(baseURL + '/status',
+          queryParameters: {'game': game, 'name': name});
+      final job = gameStatus.data['job'];
+      final leaderCount = gameStatus.data['leaderCount'];
+      final players = gameStatus.data['players'].cast<String>();
+      final response = await Dio().get(baseURL + '/voteTeam',
+          queryParameters: {'game': game, 'name': name});
+      final agrees = response.data['voteTeamMap'][job.toString()]
+              [leaderCount.toString()]['agree']
+          .cast<String>();
+      final disagrees = response.data['voteTeamMap'][job.toString()]
+              [leaderCount.toString()]['disagree']
+          .cast<String>();
+      if (agrees.length + disagrees.length == players.length) {
+        timer?.cancel();
+        setState(() {
+          _onPressed = () => print("vote finished");
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+    }
   }
 
   @override
@@ -667,6 +717,11 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
             ],
           )
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '确认投票结果',
+        onPressed: _onPressed,
+        child: const Icon(Icons.arrow_right_alt),
       ),
     );
   }
