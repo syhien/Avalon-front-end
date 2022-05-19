@@ -203,6 +203,7 @@ class _JoinPageState extends State<JoinPage> {
         _players.length <= 10) {
       setState(() {
         _buttonIcon = const Icon(Icons.arrow_right_alt);
+        timer?.cancel();
         _onPressed = () => Navigator.push(context,
             MaterialPageRoute(builder: (context) => const IdentityPage()));
       });
