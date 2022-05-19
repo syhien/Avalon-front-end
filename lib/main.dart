@@ -215,6 +215,8 @@ class _JoinPageState extends State<JoinPage> {
     var prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('name');
     prefs.setString('game', game);
+    prefs.setInt('job', 1);
+    prefs.setInt('leaderCount', 1);
     var dio = Dio();
     try {
       var response = await dio.post(baseURL + '/join',
@@ -295,8 +297,14 @@ Future<bool> isLeader() async {
   var prefs = await SharedPreferences.getInstance();
   final name = prefs.getString('name');
   final game = prefs.getString('game');
-  final response = await Dio().get(baseURL + '/formTeam',
-      queryParameters: {'game': game, 'name': name});
+  final job = prefs.getInt('job')!;
+  final leaderCount = prefs.getInt('leaderCount')!;
+  final response = await Dio().get(baseURL + '/formTeam', queryParameters: {
+    'game': game,
+    'name': name,
+    'job': job,
+    'leaderCount': leaderCount
+  });
   final leader = response.data['leader'];
   final players = response.data['players'].cast<String>();
   if (players[leader] == name) {
@@ -470,8 +478,8 @@ class _ChooseTeamPageState extends State<ChooseTeamPage> {
       final game = prefs.getString('game');
       final response = await Dio().get(baseURL + '/status',
           queryParameters: {'game': game, 'name': name});
-      job = response.data['job'];
-      leaderCount = response.data['leaderCount'];
+      job = prefs.getInt('job')!;
+      leaderCount = prefs.getInt('leaderCount')!;
       _players = response.data['players'].cast<String>();
       setState(() {});
     } catch (e) {
@@ -579,13 +587,17 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
   void getJob() async {
     try {
       var prefs = await SharedPreferences.getInstance();
+      job = prefs.getInt('job')!;
+      leaderCount = prefs.getInt('leaderCount')!;
       final name = prefs.getString('name');
       final game = prefs.getString('game');
-      final response = await Dio().get(baseURL + '/voteTeam',
-          queryParameters: {'game': game, 'name': name});
+      final response = await Dio().get(baseURL + '/voteTeam', queryParameters: {
+        'game': game,
+        'name': name,
+        'job': job,
+        'leaderCount': leaderCount
+      });
       setState(() {
-        job = response.data['job'];
-        leaderCount = response.data['leaderCount'];
         leader = response.data['leader'];
         _players = response.data['players'].cast<String>();
         _team = response.data['team'].cast<String>();
@@ -615,6 +627,8 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
       Dio().post(baseURL + '/voteTeam', queryParameters: {
         'game': game,
         'name': name,
+        'job': job,
+        'leaderCount': leaderCount,
         'vote': agree ? 'agree' : 'disagree'
       });
       timer = Timer.periodic(
@@ -631,11 +645,13 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
       final game = prefs.getString('game');
       final gameStatus = await Dio().get(baseURL + '/status',
           queryParameters: {'game': game, 'name': name});
-      final job = gameStatus.data['job'];
-      final leaderCount = gameStatus.data['leaderCount'];
       final players = gameStatus.data['players'].cast<String>();
-      final response = await Dio().get(baseURL + '/voteTeam',
-          queryParameters: {'game': game, 'name': name});
+      final response = await Dio().get(baseURL + '/voteTeam', queryParameters: {
+        'game': game,
+        'name': name,
+        'job': job,
+        'leaderCount': leaderCount
+      });
       final agrees = response.data['voteTeamMap'][job.toString()]
               [leaderCount.toString()]['agree']
           .cast<String>();
@@ -678,7 +694,8 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
             padding: const EdgeInsets.all(16),
             child: Container(
               alignment: Alignment.topLeft,
-              child: Text('本次选拔的队长为' + _players[leader],
+              child: Text(
+                  '本次选拔的队长为' + (_players.isNotEmpty ? _players[leader] : ""),
                   style: const TextStyle(fontSize: 22)),
             ),
           ),
