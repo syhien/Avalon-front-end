@@ -615,7 +615,8 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
   @override
   void initState() {
     super.initState();
-    getJob();
+    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      getJob();
     });
   }
 
@@ -658,6 +659,7 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
         'job': job,
         'leaderCount': leaderCount
       });
+      final team = response.data['team'].cast<String>();
       final agrees = response.data['voteTeamMap'][job.toString()]
               [leaderCount.toString()]['agree']
           .cast<String>();
@@ -667,7 +669,22 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
       if (agrees.length + disagrees.length == players.length) {
         timer?.cancel();
         setState(() {
-          _onPressed = () => print("vote finished");
+          //如玩家为任务成员，跳转到任务页面，否则跳转到等待页面
+          if (agrees.length > disagrees.length) {
+            if (team.contains(name)) {
+              Fluttertoast.showToast(msg: '投票通过，点击执行任务');
+              _onPressed = () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const VoteJobPage()));
+              };
+            } else {
+              Fluttertoast.showToast(msg: '投票通过，点击查看任务结果');
+              _onPressed = () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const WaitJobPage()));
+            }
+          }
         });
       }
     } catch (e) {
@@ -727,7 +744,6 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
                 child: ElevatedButton(
                   child: const Text('赞成'),
                   onPressed: () => postVoteTeam(true),
-                  autofocus: true,
                 ),
               ),
               Padding(
@@ -745,6 +761,41 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
         tooltip: '确认投票结果',
         onPressed: _onPressed,
         child: const Icon(Icons.arrow_right_alt),
+      ),
+    );
+  }
+}
+
+class WaitJobPage extends StatefulWidget {
+  const WaitJobPage({Key? key}) : super(key: key);
+
+  @override
+  State<WaitJobPage> createState() => _WaitJobPageState();
+}
+
+class _WaitJobPageState extends State<WaitJobPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+      title: const Text('等待任务执行完毕'),
+    ));
+  }
+}
+
+class VoteJobPage extends StatefulWidget {
+  const VoteJobPage({Key? key}) : super(key: key);
+
+  @override
+  State<VoteJobPage> createState() => _VoteJobPageState();
+}
+
+class _VoteJobPageState extends State<VoteJobPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('进行任务'),
       ),
     );
   }
