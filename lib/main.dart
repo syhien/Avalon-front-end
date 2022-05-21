@@ -603,6 +603,9 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
         _players = response.data['players'].cast<String>();
         _team = response.data['team'].cast<String>();
       });
+      if (_players.isNotEmpty) {
+        timer?.cancel();
+      }
     } catch (e) {
       print(e.toString());
     }
@@ -612,6 +615,7 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
   void initState() {
     super.initState();
     getJob();
+    });
   }
 
   @override
