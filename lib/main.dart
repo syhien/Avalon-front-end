@@ -604,7 +604,7 @@ class _VoteTeamPageState extends State<VoteTeamPage> {
         _players = response.data['players'].cast<String>();
         _team = response.data['team'].cast<String>();
       });
-      if (_players.isNotEmpty) {
+      if (_team.length == teamNumbersDict[job][leaderCount]) {
         timer?.cancel();
       }
     } catch (e) {
@@ -876,7 +876,7 @@ class _VoteJobPageState extends State<VoteJobPage> {
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: '确认投票结果',
-        onPressed: () => print("我投票咯"),
+        onPressed: _onPressed,
         child: const Icon(Icons.arrow_right_alt),
       ),
     );
@@ -891,8 +891,67 @@ class ResultPage extends StatefulWidget {
 }
 
 class _ResultPageState extends State<ResultPage> {
+  bool failed = false;
+  var passes;
+  var fails;
+
+  @override
+  void initState() {
+    super.initState();
+    getResult();
+  }
+
+  Future<void> getResult() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final job = prefs.getInt('job');
+      final response = await Dio().get(baseURL + '/voteJob',
+          queryParameters: {'game': game, 'name': name, 'job': job});
+      final team = response.data['team'].cast<String>();
+      passes = response.data['voteJobMap']['pass'].cast<String>();
+      fails = response.data['voteJobMap']['fail'].cast<String>();
+      setState(() {
+        failed = fails.isNotEmpty;
+        if (job == 4 && team.length >= 7) {
+          if (fails.length >= 2) {
+            failed = true;
+          } else {
+            failed = false;
+          }
+        }
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('任务结果'),
+      ),
+      body: Column(children: [
+        Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              '任务成功：' + passes.length.toString(),
+              style: const TextStyle(fontSize: 24),
+            )),
+        Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              '任务失败：' + fails.length.toString(),
+              style: const TextStyle(fontSize: 24),
+            )),
+      ]),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '进入下一任务',
+        onPressed: () => print(failed ? '任务失败' : '任务成功'),
+        child: const Icon(Icons.arrow_right_alt),
+      ),
+    );
   }
 }
