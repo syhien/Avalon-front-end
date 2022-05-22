@@ -791,12 +791,108 @@ class VoteJobPage extends StatefulWidget {
 }
 
 class _VoteJobPageState extends State<VoteJobPage> {
+  Timer? timer;
+  var _onPressed;
+
+  @override
+  void initState() {
+    super.initState();
+    timer =
+        Timer.periodic(const Duration(seconds: 1), (Timer t) => checkVoteJob());
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> checkVoteJob() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final job = prefs.getInt('job');
+      final response = await Dio().get(baseURL + '/voteJob',
+          queryParameters: {'game': game, 'name': name, 'job': job});
+      final team = response.data['team'].cast<String>();
+      final passes = response.data['voteJobMap']['pass'].cast<String>();
+      final fails = response.data['voteJobMap']['fail'].cast<String>();
+      if (passes.length + fails.length == team.length) {
+        timer?.cancel();
+        Fluttertoast.showToast(msg: '任务完毕，点击查看任务结果');
+        setState(() {
+          _onPressed = () => Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const ResultPage()));
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> postVoteJob(bool pass) async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name');
+      final game = prefs.getString('game');
+      final job = prefs.getInt('job');
+      final vote = pass ? 'pass' : 'fail';
+      final response = await Dio().post(baseURL + '/voteJob', queryParameters: {
+        'game': game,
+        'name': name,
+        'job': job,
+        'vote': vote
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('进行任务'),
       ),
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              child: const Text('任务成功'),
+              onPressed: () => postVoteJob(true),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              child: const Text('任务失败'),
+              onPressed: () => postVoteJob(false),
+            ),
+          )
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '确认投票结果',
+        onPressed: () => print("我投票咯"),
+        child: const Icon(Icons.arrow_right_alt),
+      ),
     );
+  }
+}
+
+class ResultPage extends StatefulWidget {
+  const ResultPage({Key? key}) : super(key: key);
+
+  @override
+  State<ResultPage> createState() => _ResultPageState();
+}
+
+class _ResultPageState extends State<ResultPage> {
+  @override
+  Widget build(BuildContext context) {
+    return Container();
   }
 }
