@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:js_util';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -892,8 +893,8 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
   bool failed = false;
-  var passes;
-  var fails;
+  var passes = null;
+  var fails = null;
 
   @override
   void initState() {
@@ -927,6 +928,24 @@ class _ResultPageState extends State<ResultPage> {
     }
   }
 
+  Future<void> nextJob() async {
+    try {
+      var prefs = await SharedPreferences.getInstance();
+      final job = prefs.getInt('job')! + 1;
+      prefs.setInt('job', job);
+      prefs.setInt('leaderCount', 1);
+      if (await isLeader()) {
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => ChooseTeamPage()));
+      } else {
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => VoteTeamPage()));
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -937,19 +956,19 @@ class _ResultPageState extends State<ResultPage> {
         Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              '任务成功：' + passes.length.toString(),
+              '任务成功：' + (passes == null ? ' ' : passes.length.toString()),
               style: const TextStyle(fontSize: 24),
             )),
         Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              '任务失败：' + fails.length.toString(),
+              '任务失败：' + (fails == null ? ' ' : fails.length.toString()),
               style: const TextStyle(fontSize: 24),
             )),
       ]),
       floatingActionButton: FloatingActionButton(
         tooltip: '进入下一任务',
-        onPressed: () => print(failed ? '任务失败' : '任务成功'),
+        onPressed: () => nextJob(),
         child: const Icon(Icons.arrow_right_alt),
       ),
     );
